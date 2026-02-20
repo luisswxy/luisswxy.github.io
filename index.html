@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Jogo do Abate 🩸 - Oficial</title>
+    <style>
+        :root {
+            --primary: #6200ea;
+            --bg: #0a0a0c;
+            --card: #16161a;
+            --text: #ffffff;
+            --accent: #00ff88;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        nav { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; background: var(--primary); color: white; font-weight: bold; transition: 0.3s; }
+        button:disabled { background: #333; cursor: not-allowed; opacity: 0.5; }
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(98, 0, 234, 0.4); }
+
+        .hidden { display: none !important; }
+        .card { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.7); max-width: 800px; margin: auto; }
+        
+        .player-icon { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-right: 12px; }
+        .player-slot { padding: 12px; margin: 8px 0; background: #25252b; cursor: pointer; border-radius: 8px; display: flex; align-items: center; transition: 0.2s; border: 1px solid transparent; }
+        .player-slot:hover { border-color: var(--accent); background: #2d2d35; }
+        .winner { background: var(--accent) !important; color: #000; font-weight: bold; }
+
+        .bracket-container { display: flex; flex-direction: column; align-items: center; gap: 30px; margin-top: 20px; }
+        .match { border: 1px solid #444; padding: 15px; width: 280px; border-radius: 10px; background: #1c1c21; position: relative; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #333; padding: 15px; text-align: center; }
+        th { background: var(--primary); }
+
+        #cena-final { text-align: center; animation: fadeIn 1s; }
+        .podium { display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin: 40px 0; height: 300px; }
+        .podium-place { width: 120px; background: var(--primary); display: flex; flex-direction: column; align-items: center; border-radius: 10px 10px 0 0; position: relative; padding-bottom: 10px; }
+        .p-1 { height: 100%; background: gold; color: black; z-index: 3; }
+        .p-2 { height: 70%; background: #c0c0c0; color: black; z-index: 2; }
+        .p-3 { height: 50%; background: #cd7f32; color: black; z-index: 1; }
+        .p-4 { height: 30%; background: #444; color: white; }
+        .podium-icon { width: 50px; height: 50px; border-radius: 50%; border: 2px solid white; margin-bottom: 5px; }
+
+        .prendas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; text-align: left; }
+        .prenda-card { background: #25252b; padding: 15px; border-radius: 8px; border-left: 5px solid var(--primary); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .history-item { font-size: 0.8em; color: #aaa; margin-top: 5px; border-bottom: 1px solid #333; padding: 5px; }
+
+        .btn-escolha { margin: 5px; background: #333; border: 1px solid var(--primary); }
+        .btn-escolha:hover { background: var(--primary); }
+        .roleta-box { border: 4px solid var(--accent); padding: 20px; border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin: 20px auto; font-weight: bold; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(1080deg); } }
+        .spinning { animation: spin 1.5s cubic-bezier(0.1, 0, 0.1, 1); }
+    </style>
+</head>
+<body>
+
+<h1 style="text-align:center;">Jogo do Abate 🩸</h1>
+
+<nav id="menu-jogos">
+    <button onclick="showSection('tabela')">📊 Placar</button>
+    <button id="btn-Valorant" onclick="initGame('Valorant')">🔫 Valorant</button>
+    <button id="btn-Minecraft" onclick="initGame('Minecraft')">⛏️ PVP</button>
+    <button id="btn-Clash" onclick="initGame('Clash')">👑 Clash</button>
+    <button id="btn-Pokemon" onclick="initGame('Pokemon')">🐉 Pokemon</button>
+    <button onclick="showSection('prendas')">📜 Prendas</button>
+</nav>
+
+<div id="section-tabela" class="card">
+    <h2>Resultados Atuais</h2>
+    <table id="tabela-pontos">
+        <thead>
+            <tr><th>Pos</th><th>Jogador</th><th>Pontos</th></tr>
+        </thead>
+        <tbody id="corpo-tabela"></tbody>
+    </table>
+    
+    <div style="margin-top: 30px;">
+        <h3>📜 Histórico de Torneios</h3>
+        <div id="historico-lista"></div>
+        <button onclick="limparTudo()" style="background: #cc0000; margin-top: 15px; padding: 5px 10px; font-size: 11px; opacity: 0.7;">
+            🗑️ Limpar Todos os Dados (Histórico e Pontos)
+        </button>
+    </div>
+</div>
+
+<div id="section-jogo" class="card hidden">
+    <div style="display:flex; justify-content: space-between; align-items: center;">
+        <h2 id="titulo-jogo">Jogo</h2>
+        <button onclick="randomizeBracket()" id="btn-random">🔀 Sortear</button>
+    </div>
+    <div class="bracket-container">
+        <div class="match">
+            <div id="g1-p1" class="player-slot" onclick="win(1, 1)">-</div>
+            <div id="g1-p2" class="player-slot" onclick="win(1, 2)">-</div>
+        </div>
+        <div class="match">
+            <div id="g2-p1" class="player-slot" onclick="win(2, 1)">-</div>
+            <div id="g2-p2" class="player-slot" onclick="win(2, 2)">-</div>
+        </div>
+        <div style="display: flex; gap: 20px;">
+            <div class="match" style="border-color: gold;">
+                <h5 style="margin:0">Final</h5>
+                <div id="fin-p1" class="player-slot" onclick="win('final', 1)">-</div>
+                <div id="fin-p2" class="player-slot" onclick="win('final', 2)">-</div>
+            </div>
+            <div class="match" style="border-color: #cd7f32;">
+                <h5 style="margin:0">3º Lugar</h5>
+                <div id="3rd-p1" class="player-slot" onclick="win('third', 1)">-</div>
+                <div id="3rd-p2" class="player-slot" onclick="win('third', 2)">-</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="section-prendas" class="card hidden">
+    <h2>📜 Regras das Prendas</h2>
+    <div class="prendas-grid">
+        <div class="prenda-card"><strong>🥇 1º Lugar:</strong> Escolhe a prenda de outro e ela é feita em <b>DOBRO</b>. É imune.</div>
+        <div class="prenda-card"><strong>🥈 2º Lugar:</strong> Pode multiplicar a prenda de qualquer posição.</div>
+        <div class="prenda-card"><strong>🥉 3º Lugar:</strong> Gira a roleta. O sorteado tem a prenda multiplicada.</div>
+        <div class="prenda-card"><strong>💀 4º Lugar:</strong> Alvo fácil.</div>
+    </div>
+</div>
+
+<div id="section-final" class="card hidden">
+    <div id="cena-final">
+        <h1>🏆 TORNEIO ENCERRADO!</h1>
+        <div class="podium" id="podium-area"></div>
+        <div id="interacao-prendas" class="prenda-card" style="margin-top: 20px; border-left-color: var(--accent);">
+            <h3 id="instrucao-fase">Fase de Escolhas</h3>
+            <div id="container-opcoes"></div>
+            <div id="display-roleta" class="hidden">
+                <div id="roleta-circulo" class="roleta-box">?</div>
+                <button onclick="girarRoleta()" id="btn-girar">GIRAR 🎰</button>
+            </div>
+        </div>
+        <div id="resumo-final-status" class="hidden" style="margin-top:20px; text-align:left; background: #000; padding: 15px; border-radius: 8px;">
+            <h3>📊 Status das Prendas:</h3>
+            <div id="lista-prendas"></div>
+            <button onclick="resetTorneio()" style="margin-top: 30px; background: #ff4444; width: 100%;">🔥 RESETAR E SALVAR NO HISTÓRICO</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const playerPhotos = {
+        "Luis": "https://dthezntil550i.cloudfront.net/et/latest/et2401150942253990025821366/1bac1ab2-220a-4c7d-b20f-d2c9b6f5c583.png",
+        "Vitor": "https://wallpapers.com/images/hd/eren-yeager-pfp-with-bloody-hand-c2zlw9o3puu0ihar.jpg",
+        "João Pedro": "https://i.pinimg.com/564x/33/a9/8d/33a98d8bb16380a00de9f3259f1e7adb.jpg",
+        "Enzo": "https://i.pinimg.com/736x/5a/4e/b2/5a4eb240abd71b131cefacfbb1ccc545.jpg"
+    };
+
+    const players = Object.keys(playerPhotos);
+    const gameList = ["Valorant", "Minecraft", "Clash", "Pokemon"];
+
+    let state = JSON.parse(localStorage.getItem('torneio_abate')) || {
+        scores: { "Luis": 0, "Vitor": 0, "João Pedro": 0, "Enzo": 0 },
+        finishedGames: [],
+        history: []
+    };
+
+    let currentGame = "";
+    let bracket = { semi1: [], semi2: [], final: [null, null], third: [null, null], winners: {} };
+    let rankingFinal = [];
+    let multiplicadores = {};
+
+    function save() { localStorage.setItem('torneio_abate', JSON.stringify(state)); }
+
+    function showSection(id) {
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('section-' + id).classList.remove('hidden');
+        if(id === 'tabela') updateTable();
+    }
+
+    function initGame(game) {
+        if(state.finishedGames.includes(game)) return alert("Este jogo já foi disputado!");
+        currentGame = game;
+        document.getElementById('titulo-jogo').innerText = "Disputa: " + game;
+        resetBracketUI();
+        randomizeBracket();
+        showSection('jogo');
+    }
+
+    function randomizeBracket() {
+        let shuffled = [...players].sort(() => Math.random() - 0.5);
+        bracket = { semi1: [shuffled[0], shuffled[1]], semi2: [shuffled[2], shuffled[3]], final: [null, null], third: [null, null], winners: {} };
+        updateBracketUI();
+    }
+
+    function getPlayerHTML(name, small = false) {
+        if(!name) return "?";
+        let size = small ? '30px' : '60px';
+        return `<img src="${playerPhotos[name]}" class="player-icon" style="width:${size}; height:${size}"> <span>${name}</span>`;
+    }
+
+    function updateBracketUI() {
+        const slots = ['g1-p1', 'g1-p2', 'g2-p1', 'g2-p2', 'fin-p1', 'fin-p2', '3rd-p1', '3rd-p2'];
+        const names = [bracket.semi1[0], bracket.semi1[1], bracket.semi2[0], bracket.semi2[1], bracket.final[0], bracket.final[1], bracket.third[0], bracket.third[1]];
+        slots.forEach((s, i) => document.getElementById(s).innerHTML = getPlayerHTML(names[i]));
+    }
+
+    function win(match, num) {
+        if(match === 1) { bracket.winners.s1 = bracket.semi1[num-1]; bracket.final[0] = bracket.winners.s1; bracket.third[0] = bracket.semi1[num === 1 ? 1 : 0]; }
+        else if(match === 2) { bracket.winners.s2 = bracket.semi2[num-1]; bracket.final[1] = bracket.winners.s2; bracket.third[1] = bracket.semi2[num === 1 ? 1 : 0]; }
+        else if(match === 'final') { if(!bracket.final[0] || !bracket.final[1]) return; bracket.winners.f = bracket.final[num-1]; }
+        else if(match === 'third') { if(!bracket.third[0] || !bracket.third[1]) return; bracket.winners.t = bracket.third[num-1]; }
+        updateBracketUI();
+        if(bracket.winners.f && bracket.winners.t) checkEnd();
+    }
+
+    function checkEnd() {
+        let res = [bracket.winners.f, bracket.final.find(p => p !== bracket.winners.f), bracket.winners.t, bracket.third.find(p => p !== bracket.winners.t)];
+        state.scores[res[0]] += 3; state.scores[res[1]] += 2; state.scores[res[2]] += 1;
+        state.finishedGames.push(currentGame);
+        save();
+        if(state.finishedGames.length === 4) showFinalScene(); else { alert(`Fim de jogo!`); showSection('tabela'); }
+    }
+
+    function updateTable() {
+        const corpo = document.getElementById('corpo-tabela');
+        corpo.innerHTML = "";
+        let sorted = Object.entries(state.scores).sort((a,b) => b[1]-a[1]);
+        sorted.forEach((p, i) => corpo.innerHTML += `<tr><td>${i+1}º</td><td style="display:flex; align-items:center; justify-content:center">${getPlayerHTML(p[0], true)}</td><td>${p[1]}</td></tr>`);
+        gameList.forEach(g => { if(state.finishedGames.includes(g)) document.getElementById('btn-'+g).disabled = true; });
+        document.getElementById('historico-lista').innerHTML = state.history.map(h => `<div class="history-item">📅 ${h.date} - Campeão: <b>${h.winner}</b></div>`).join("");
+    }
+
+    function showFinalScene() {
+        showSection('final');
+        rankingFinal = Object.entries(state.scores).sort((a,b) => b[1]-a[1]);
+        multiplicadores = {};
+        rankingFinal.forEach(p => multiplicadores[p[0]] = 1);
+        const podium = document.getElementById('podium-area');
+        podium.innerHTML = "";
+        [1, 0, 2, 3].forEach(idx => {
+            let p = rankingFinal[idx];
+            podium.innerHTML += `<div class="podium-place p-${idx+1}"><span>${idx+1}º</span><img src="${playerPhotos[p[0]]}" class="podium-icon"><small>${p[0]}</small></div>`;
+        });
+        faseEscolhaPrimeiro();
+    }
+
+    function faseEscolhaPrimeiro() {
+        const primeiro = rankingFinal[0][0];
+        document.getElementById('instrucao-fase').innerText = `🥇 ${primeiro}, escolha quem fará a prenda em DOBRO (x2):`;
+        const container = document.getElementById('container-opcoes');
+        container.innerHTML = "";
+        rankingFinal.forEach(p => { if(p[0] !== primeiro) container.innerHTML += `<button class="btn-escolha" onclick="votoPrimeiro('${p[0]}')">${p[0]}</button>`; });
+    }
+
+    function votoPrimeiro(alvo) { multiplicadores[alvo] *= 2; faseEscolhaSegundo(); }
+
+    function faseEscolhaSegundo() {
+        const segundo = rankingFinal[1][0]; const primeiro = rankingFinal[0][0];
+        document.getElementById('instrucao-fase').innerText = `🥈 ${segundo}, escolha quem terá a prenda MULTIPLICADA (x2):`;
+        const container = document.getElementById('container-opcoes');
+        container.innerHTML = "";
+        rankingFinal.forEach(p => { if(p[0] !== primeiro) container.innerHTML += `<button class="btn-escolha" onclick="votoSegundo('${p[0]}')">${p[0]}</button>`; });
+    }
+
+    function votoSegundo(alvo) { multiplicadores[alvo] *= 2; faseTerceiro(); }
+
+    function faseTerceiro() {
+        document.getElementById('instrucao-fase').innerText = `🥉 3º Lugar: Gire a Roleta:`;
+        document.getElementById('container-opcoes').innerHTML = "";
+        document.getElementById('display-roleta').classList.remove('hidden');
+    }
+
+    function girarRoleta() {
+        const circulo = document.getElementById('roleta-circulo');
+        const btn = document.getElementById('btn-girar');
+        btn.disabled = true;
+        circulo.classList.add('spinning');
+        const possiveis = rankingFinal.slice(1).map(p => p[0]);
+        const sorteado = possiveis[Math.floor(Math.random() * possiveis.length)];
+        setTimeout(() => {
+            circulo.classList.remove('spinning'); circulo.innerText = sorteado;
+            multiplicadores[sorteado] *= 2;
+            setTimeout(exibirResumoFinal, 1500);
+        }, 1500);
+    }
+
+    function exibirResumoFinal() {
+        document.getElementById('interacao-prendas').classList.add('hidden');
+        document.getElementById('resumo-final-status').classList.remove('hidden');
+        const lista = document.getElementById('lista-prendas');
+        lista.innerHTML = "";
+        rankingFinal.forEach((p, i) => {
+            const mult = multiplicadores[p[0]];
+            lista.innerHTML += `<p><b>${i+1}º ${p[0]}:</b> ${mult > 1 ? '🔥 Prenda x'+mult : '✅ Prenda Normal'}${i===0?' (🛡️ IMUNE)':''}</p>`;
+        });
+    }
+
+    function resetTorneio() {
+        state.history.unshift({ date: new Date().toLocaleDateString(), winner: rankingFinal[0][0] });
+        state.scores = { "Luis": 0, "Vitor": 0, "João Pedro": 0, "Enzo": 0 };
+        state.finishedGames = [];
+        save();
+        location.reload();
+    }
+
+    function limparTudo() {
+        if(confirm("Apagar TUDO permanentemente?")) { localStorage.removeItem('torneio_abate'); location.reload(); }
+    }
+
+    function resetBracketUI() { document.querySelectorAll('.player-slot').forEach(e => e.classList.remove('winner')); }
+
+    updateTable();
+    if(state.finishedGames.length === 4) showFinalScene();
+</script>
+</body>
+</html>

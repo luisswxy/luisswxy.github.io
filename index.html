@@ -61,10 +61,12 @@
 
 <nav id="menu-jogos">
     <button onclick="showSection('tabela')">📊 Placar</button>
+    <button id="btn-MK9" onclick="initGame('MK9')">🥋 Mortal Kombat 9</button>
+    <button id="btn-Brawlhalla" onclick="initGame('Brawlhalla')">⚔️ Brawlhalla</button>
+    <button id="btn-FreeFire" onclick="initGame('FreeFire')">🔥 Free Fire</button>
     <button id="btn-Valorant" onclick="initGame('Valorant')">🔫 Valorant</button>
-    <button id="btn-Minecraft" onclick="initGame('Minecraft')">⛏️ PVP</button>
-    <button id="btn-Clash" onclick="initGame('Clash')">👑 Clash</button>
-    <button id="btn-Pokemon" onclick="initGame('Pokemon')">🐉 Pokemon</button>
+    <button id="btn-Pokemon" onclick="initGame('Pokemon')">🐉 Pokémon Showdown</button>
+    <button id="btn-Clash" onclick="initGame('Clash')">👑 Clash Royale</button>
     <button onclick="showSection('prendas')">📜 Prendas</button>
 </nav>
 
@@ -154,7 +156,7 @@
     };
 
     const players = Object.keys(playerPhotos);
-    const gameList = ["Valorant", "Minecraft", "Clash", "Pokemon"];
+    const gameList = ["MK9", "Brawlhalla", "FreeFire", "Valorant", "Pokemon", "Clash"];
 
     let state = JSON.parse(localStorage.getItem('torneio_abate')) || {
         scores: { "Luis": 0, "Vitor": 0, "João Pedro": 0, "Enzo": 0 },
@@ -211,14 +213,14 @@
         if(bracket.winners.f && bracket.winners.t) checkEnd();
     }
 
-    function checkEnd() {
-        let res = [bracket.winners.f, bracket.final.find(p => p !== bracket.winners.f), bracket.winners.t, bracket.third.find(p => p !== bracket.winners.t)];
-        state.scores[res[0]] += 3; state.scores[res[1]] += 2; state.scores[res[2]] += 1;
-        state.finishedGames.push(currentGame);
-        save();
-        if(state.finishedGames.length === 4) showFinalScene(); else { alert(`Fim de jogo!`); showSection('tabela'); }
-    }
-
+function checkEnd() {
+    let res = [bracket.winners.f, bracket.final.find(p => p !== bracket.winners.f), bracket.winners.t, bracket.third.find(p => p !== bracket.winners.t)];
+    state.scores[res[0]] += 3; state.scores[res[1]] += 2; state.scores[res[2]] += 1;
+    state.finishedGames.push(currentGame);
+    save();
+    // Mudou de 4 para 6 aqui:
+    if(state.finishedGames.length === 6) showFinalScene(); else { alert(`Fim de jogo!`); showSection('tabela'); }
+}
     function updateTable() {
         const corpo = document.getElementById('corpo-tabela');
         corpo.innerHTML = "";
@@ -307,8 +309,8 @@
 
     function resetBracketUI() { document.querySelectorAll('.player-slot').forEach(e => e.classList.remove('winner')); }
 
-    updateTable();
-    if(state.finishedGames.length === 4) showFinalScene();
+updateTable();
+if(state.finishedGames.length === 6) showFinalScene();
 </script>
 </body>
 </html>
